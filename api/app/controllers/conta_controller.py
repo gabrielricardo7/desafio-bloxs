@@ -115,24 +115,27 @@ def sacar(id_conta: int):
 
     saques: list[Transacao] = []
 
-    for transacao in transacoes:
-        if not transacao.deposito:
-            saques.append(transacao)
+    for t in transacoes:
+        if not t.deposito:
+            saques.append(t)
 
     soma = 0
 
     for x in saques:
-        if x.data_transacao[:10] == str(date.today()):
+        if x.data_transacao.date() == date.today():
             soma += x.valor
 
-    if not limite > (soma + valor):
+    if limite <= soma:
         return {"msg": "limite de saque diário atingido!"}
+
+    if limite < (soma + valor):
+        return {"msg": f"acima do limite de saque diário! - Disponível: {(limite - soma)}"}
 
     conta.saldo -= valor
 
     db.session.commit()
 
-    t = Transacao(
+    transacao = Transacao(
         id_conta=id_conta,
         valor=valor,
         deposito=False,
@@ -142,11 +145,11 @@ def sacar(id_conta: int):
     db.session.commit()
 
     nova_transacao = {
-        "idTransacao": t.id_transacao,
-        "idConta": t.id_conta,
-        "valor": t.valor,
-        "dataTransacao": t.data_transacao,
-        "tipo": "deposito" if t.deposito else "saque",
+        "idTransacao": transacao.id_transacao,
+        "idConta": transacao.id_conta,
+        "valor": transacao.valor,
+        "dataTransacao": transacao.data_transacao,
+        "tipo": "deposito" if transacao.deposito else "saque",
     }
 
     return nova_transacao, HTTPStatus.OK
@@ -167,6 +170,14 @@ def bloquear_conta(id_conta: int):
 
 
 def recuperar_extrato(id_conta: int):
+    conta: Conta = Conta.query.filter_by(id_conta=id_conta).first()
+
+    if not conta:
+        return {"msg": "conta não encontrada!"}, HTTPStatus.NOT_FOUND
+
+    if conta.flag_ativo == False:
+        return {"msg": f"conta {conta.id_conta} bloqueada!"}
+
     transacoes: list[Transacao] = Transacao.query.filter_by(id_conta=id_conta).all()
 
     extrato = []
