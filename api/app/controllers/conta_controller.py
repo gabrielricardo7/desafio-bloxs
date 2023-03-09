@@ -5,10 +5,21 @@ from flask import request
 
 from app.configs.database import db
 from app.models import Conta, Transacao
+from app.utils import procurar_conta, procurar_pessoa, procurar_transacoes
 
 
 def criar_conta():
     req = request.get_json()
+
+    id_pessoa = req["idPessoa"] if req["idPessoa"] else None
+
+    if id_pessoa is None:
+        return {"msg": "id não informado."}
+
+    pessoa = procurar_pessoa(id_pessoa)
+
+    if not pessoa:
+        return {"msg": "pessoa não encontrada."}
 
     conta = Conta(
         id_pessoa=req["idPessoa"],
@@ -22,7 +33,12 @@ def criar_conta():
 
     nova_conta = {
         "idConta": conta.id_conta,
-        "idPessoa": conta.id_pessoa,
+        "pessoa": {
+            "idPessoa": pessoa.id_pessoa,
+            "nome": pessoa.nome,
+            "cpf": pessoa.cpf,
+            "dataNascimento": pessoa.data_nascimento,
+        },
         "saldo": conta.saldo,
         "limiteSaqueDiario": conta.limite_saque_diario,
         "flagAtivo": conta.flag_ativo,
@@ -34,10 +50,10 @@ def criar_conta():
 
 
 def depositar(id_conta: int):
-    conta: Conta = Conta.query.filter_by(id_conta=id_conta).first()
+    conta = procurar_conta(id_conta)
 
     if not conta:
-        return {"msg": "conta não encontrada!"}, HTTPStatus.NOT_FOUND
+        return {"msg": f"conta {id_conta} não encontrada!"}, HTTPStatus.NOT_FOUND
 
     if conta.flag_ativo == False:
         return {"msg": f"conta {conta.id_conta} bloqueada!"}
@@ -67,20 +83,20 @@ def depositar(id_conta: int):
 
     nova_transacao = {
         "idTransacao": transacao.id_transacao,
-        "idConta": transacao.id_conta,
         "valor": transacao.valor,
         "dataTransacao": transacao.data_transacao,
         "tipo": "deposito" if transacao.deposito else "saque",
+        "idConta": transacao.id_conta,
     }
 
     return nova_transacao, HTTPStatus.OK
 
 
 def consultar_saldo(id_conta: int):
-    conta: Conta = Conta.query.filter_by(id_conta=id_conta).first()
+    conta = procurar_conta(id_conta)
 
     if not conta:
-        return {"msg": "conta não encontrada!"}, HTTPStatus.NOT_FOUND
+        return {"msg": f"conta {id_conta} não encontrada!"}, HTTPStatus.NOT_FOUND
 
     if conta.flag_ativo == False:
         return {"msg": f"conta {conta.id_conta} bloqueada!"}
@@ -91,10 +107,10 @@ def consultar_saldo(id_conta: int):
 
 
 def sacar(id_conta: int):
-    conta: Conta = Conta.query.filter_by(id_conta=id_conta).first()
+    conta = procurar_conta(id_conta)
 
     if not conta:
-        return {"msg": "conta não encontrada!"}, HTTPStatus.NOT_FOUND
+        return {"msg": f"conta {id_conta} não encontrada!"}, HTTPStatus.NOT_FOUND
 
     if conta.flag_ativo == False:
         return {"msg": f"conta {conta.id_conta} bloqueada!"}
@@ -129,7 +145,9 @@ def sacar(id_conta: int):
         return {"msg": "limite de saque diário atingido!"}
 
     if limite < (soma + valor):
-        return {"msg": f"acima do limite de saque diário! - Disponível: {(limite - soma)}"}
+        return {
+            "msg": f"acima do limite de saque diário! - Disponível: {(limite - soma)}"
+        }
 
     conta.saldo -= valor
 
@@ -146,20 +164,20 @@ def sacar(id_conta: int):
 
     nova_transacao = {
         "idTransacao": transacao.id_transacao,
-        "idConta": transacao.id_conta,
         "valor": transacao.valor,
         "dataTransacao": transacao.data_transacao,
         "tipo": "deposito" if transacao.deposito else "saque",
+        "idConta": transacao.id_conta,
     }
 
     return nova_transacao, HTTPStatus.OK
 
 
 def bloquear_conta(id_conta: int):
-    conta: Conta = Conta.query.filter_by(id_conta=id_conta).first()
+    conta = procurar_conta(id_conta)
 
     if not conta:
-        return {"msg": "conta não encontrada!"}, HTTPStatus.NOT_FOUND
+        return {"msg": f"conta {id_conta} não encontrada!"}, HTTPStatus.NOT_FOUND
 
     if conta.flag_ativo == True:
         conta.flag_ativo = False
@@ -170,15 +188,25 @@ def bloquear_conta(id_conta: int):
 
 
 def recuperar_extrato(id_conta: int):
-    conta: Conta = Conta.query.filter_by(id_conta=id_conta).first()
+    conta = procurar_conta(id_conta)
 
     if not conta:
-        return {"msg": "conta não encontrada!"}, HTTPStatus.NOT_FOUND
+        return {"msg": f"conta {id_conta} não encontrada!"}, HTTPStatus.NOT_FOUND
 
     if conta.flag_ativo == False:
         return {"msg": f"conta {conta.id_conta} bloqueada!"}
 
-    transacoes: list[Transacao] = Transacao.query.filter_by(id_conta=id_conta).all()
+    pessoa = procurar_pessoa(conta.id_pessoa)
+
+    x = {
+        "idConta": conta.id_conta,
+        "idPessoa": pessoa.id_pessoa,
+        "nome": pessoa.nome,
+        "cpf": pessoa.cpf,
+        "dataNascimento": pessoa.data_nascimento,
+    }
+
+    transacoes = procurar_transacoes(id_conta)
 
     extrato = []
 
@@ -186,11 +214,12 @@ def recuperar_extrato(id_conta: int):
         extrato.append(
             {
                 "idTransacao": transacao.id_transacao,
-                "idConta": transacao.id_conta,
                 "valor": transacao.valor,
                 "dataTransacao": transacao.data_transacao,
                 "tipo": "deposito" if transacao.deposito else "saque",
             }
         )
 
-    return {"extrato": extrato}, HTTPStatus.OK
+    x["extrato"] = extrato
+
+    return x, HTTPStatus.OK
