@@ -1,10 +1,69 @@
-import { Typography } from "@mui/material";
+import axios from "axios";
+import { useState } from "react";
+import { Box, Button, TextField, Typography } from "@mui/material";
+import { Send } from "@mui/icons-material";
 
 function Saldo() {
+  const [idConta, setIdConta] = useState(null);
+  const [data, setData] = useState(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setData(null);
+    axios({
+      url: `/saldo/${idConta}`,
+      method: "GET",
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          setData(response.data);
+        }
+      })
+      .catch((error) => {
+        if (error.response) {
+          setData(error.response.data);
+          console.log(error.response);
+          console.log(error.response.status);
+          console.log(error.response.headers);
+        }
+      });
+  };
+
   return (
     <>
       <Typography variant="h4" component="h1">
         Consultar Saldo
+      </Typography>
+      <Box
+        component="form"
+        sx={{
+          "& .MuiTextField-root": { m: 1, width: "25ch" },
+        }}
+        noValidate
+        autoComplete="off"
+        onSubmit={handleSubmit}
+      >
+        <Box display="flex" alignItems="center" justifyContent="center">
+          <TextField
+            required
+            id="outlined-required"
+            label="ID da Conta"
+            type="number"
+            onChange={(e) => setIdConta(e.target.value)}
+          />
+          <Button variant="contained" type="submit" endIcon={<Send />}>
+            Enviar
+          </Button>
+        </Box>
+      </Box>
+      <Typography variant="h5" component="h2">
+        {data ? (
+          data.saldo ? (
+            <p>Saldo: R$ {data.saldo.toFixed(2)}</p>
+          ) : (
+            <p>{data.msg.toUpperCase()}</p>
+          )
+        ) : null}
       </Typography>
     </>
   );
