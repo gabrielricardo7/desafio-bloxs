@@ -24,7 +24,7 @@ function Extrato() {
       })
       .catch((error) => {
         if (error.response) {
-          setMsg(`Erro: ${error.response.status} - Tente novamente.`);
+          setMsg(error.response.data.msg);
           console.log(error.response);
           console.log(error.response.status);
           console.log(error.response.headers);
@@ -59,7 +59,7 @@ function Extrato() {
           </Button>
         </Box>
       </Box>
-      <div>{msg ? <p>{msg}</p> : null}</div>
+      <div>{msg ? <p>{msg.toUpperCase()}</p> : null}</div>
       <div>
         {data ? (
           <Box>
