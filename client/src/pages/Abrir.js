@@ -60,7 +60,7 @@ function Abrir() {
           <TextField
             required
             id="outlined-required"
-            label="ID Pessoa"
+            label="ID da Pessoa"
             type="number"
             onChange={(e) => setIdPessoa(e.target.value)}
           />
@@ -95,7 +95,9 @@ function Abrir() {
         {conta ? (
           <Box>
             <hr />
-            <p>Conta</p>
+            <Typography variant="h5" component="h2">
+              Conta
+            </Typography>
             <p>ID da Conta: {conta.idConta}</p>
             <p>Saldo: R$ {conta.saldo.toFixed(2)}</p>
             <p>
@@ -105,7 +107,9 @@ function Abrir() {
             <p>Tipo de Conta: {conta.tipoConta}</p>
             <p>Data de Criação:{formatDate(conta.dataCriacao)}</p>
             <hr />
-            <p>Pessoa</p>
+            <Typography variant="h5" component="h2">
+              Pessoa
+            </Typography>
             <p>ID da Pessoa: {conta.pessoa.idPessoa}</p>
             <p>Nome: {conta.pessoa.nome}</p>
             <p>CPF: {formatCpf(conta.pessoa.cpf)}</p>
