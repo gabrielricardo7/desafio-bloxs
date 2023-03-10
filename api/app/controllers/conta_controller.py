@@ -14,12 +14,12 @@ def criar_conta():
     id_pessoa = req["idPessoa"] if req["idPessoa"] else None
 
     if id_pessoa is None:
-        return {"msg": "id não informado."}
+        return {"msg": "id não informado."}, HTTPStatus.BAD_REQUEST
 
     pessoa = procurar_pessoa(id_pessoa)
 
     if not pessoa:
-        return {"msg": "pessoa não encontrada."}
+        return {"msg": "pessoa não encontrada."}, HTTPStatus.NOT_FOUND
 
     conta = Conta(
         id_pessoa=req["idPessoa"],
@@ -56,7 +56,7 @@ def depositar(id_conta: int):
         return {"msg": f"conta {id_conta} não encontrada!"}, HTTPStatus.NOT_FOUND
 
     if conta.flag_ativo == False:
-        return {"msg": f"conta {conta.id_conta} bloqueada!"}
+        return {"msg": f"conta {conta.id_conta} bloqueada!"}, HTTPStatus.SERVICE_UNAVAILABLE
 
     req = request.get_json()
 
@@ -99,7 +99,7 @@ def consultar_saldo(id_conta: int):
         return {"msg": f"conta {id_conta} não encontrada!"}, HTTPStatus.NOT_FOUND
 
     if conta.flag_ativo == False:
-        return {"msg": f"conta {conta.id_conta} bloqueada!"}
+        return {"msg": f"conta {conta.id_conta} bloqueada!"}, HTTPStatus.SERVICE_UNAVAILABLE
 
     saldo = conta.saldo
 
@@ -113,7 +113,7 @@ def sacar(id_conta: int):
         return {"msg": f"conta {id_conta} não encontrada!"}, HTTPStatus.NOT_FOUND
 
     if conta.flag_ativo == False:
-        return {"msg": f"conta {conta.id_conta} bloqueada!"}
+        return {"msg": f"conta {conta.id_conta} bloqueada!"}, HTTPStatus.SERVICE_UNAVAILABLE
 
     req = request.get_json()
 
@@ -142,12 +142,12 @@ def sacar(id_conta: int):
             soma += x.valor
 
     if limite <= soma:
-        return {"msg": "limite de saque diário atingido!"}
+        return {"msg": "limite de saque diário atingido!"}, HTTPStatus.SERVICE_UNAVAILABLE
 
     if limite < (soma + valor):
         return {
             "msg": f"acima do limite de saque diário! - Disponível: {(limite - soma)}"
-        }
+        }, HTTPStatus.SERVICE_UNAVAILABLE
 
     conta.saldo -= valor
 
@@ -194,7 +194,7 @@ def recuperar_extrato(id_conta: int):
         return {"msg": f"conta {id_conta} não encontrada!"}, HTTPStatus.NOT_FOUND
 
     if conta.flag_ativo == False:
-        return {"msg": f"conta {conta.id_conta} bloqueada!"}
+        return {"msg": f"conta {conta.id_conta} bloqueada!"}, HTTPStatus.SERVICE_UNAVAILABLE
 
     pessoa = procurar_pessoa(conta.id_pessoa)
 
