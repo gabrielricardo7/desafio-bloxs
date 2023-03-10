@@ -11,3 +11,26 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+a {
+  color: white;
+  flex: 1;
+  line-height: 3;
+  outline: none;
+  text-align: center;
+  text-decoration: none;
+}
+
+a:link,
+a:visited,
+a:focus {
+  color: white;
+}
+
+a:hover {
+  color: yellow;
+}
+
+a:active {
+  color: limegreen;
+}
