@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  db:
+    command: --default-authentication-plugin=mysql_native_password --bind_address=0.0.0.0
+    container_name: app-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: bloxs
+      MYSQL_ROOT_PASSWORD: password
+    image: mysql:8.0
+    ports:
+      - 3306:3306
+    # volumes:
+    #   - ./mysql/mysql_data:/var/lib/mysql
+    #   - ./mysql/mysqld:/var/run/mysqld
+
+  api:
+    container_name: app-api
+    restart: always
+    build:
+      context: ./api/
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./api:/usr/src/app
+    depends_on:
+      - db
+    links:
+      - db
+
+  client:
+    container_name: app-client
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    volumes:
+      - "./client:/usr/src/app"
+      - "/usr/src/app/node_modules"
+    ports:
+      - "1234:1234"
+    depends_on:
+      - api
+    environment:
+      - NODE_ENV=development
+
